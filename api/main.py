@@ -13,13 +13,15 @@ from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
 from pathlib import Path
+from sqlalchemy.orm import Session
 import shutil
 import re
 from datetime import datetime, timedelta
+from api.database import init_db, get_db, TaskModel, EmailLogModel, AuditLogModel
 from api.auth import (
     authenticate_user, create_token, get_current_user,
     require_manager_or_above, require_admin,
-    Token, User, TOKEN_EXPIRE_MINUTES
+    Token, User, TOKEN_EXPIRE_MINUTES, log_audit
 )
 
 app = FastAPI(
@@ -27,6 +29,10 @@ app = FastAPI(
     description="AI-powered Email Operations Assistant",
     version="1.0.0"
 )
+
+@app.on_event("startup")
+def startup():
+    init_db()  # Tables + default users banao
 
 app.add_middleware(
     CORSMiddleware,
@@ -114,20 +120,21 @@ def root():
 # ─── Auth Routes ─────────────────────────────────────────
 
 @app.post("/api/auth/login", response_model=Token)
-def login(form_data: OAuth2PasswordRequestForm = Depends()):
+def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     """Login karo — JWT token milega."""
-    user = authenticate_user(form_data.username, form_data.password)
+    user = authenticate_user(form_data.username, form_data.password, db)
     if not user:
         raise HTTPException(status_code=401, detail="Username ya password galat hai")
     token = create_token(
-        data={"sub": user["username"]},
+        data={"sub": user.username},
         expires_delta=timedelta(minutes=TOKEN_EXPIRE_MINUTES)
     )
+    log_audit(db, user.username, "login", f"Role: {user.role}")
     return Token(
         access_token=token,
         token_type="bearer",
-        role=user["role"],
-        username=user["username"]
+        role=user.role,
+        username=user.username
     )
 
 
@@ -190,7 +197,8 @@ def get_pending():
 @app.post("/api/approve/{filename}")
 def approve_task(
     filename: str,
-    current_user: User = Depends(require_manager_or_above)
+    current_user: User   = Depends(require_manager_or_above),
+    db:          Session = Depends(get_db)
 ):
     """File ko Pending_Approval se Approved mein move karo. (Manager+ only)"""
     name = safe_filename(filename)
@@ -199,18 +207,24 @@ def approve_task(
     if not src.exists():
         raise HTTPException(status_code=404, detail=f"{name} nahi mili")
     shutil.move(str(src), dst)
+
+    # DB mein log karo
+    db.add(EmailLogModel(filename=name, status="approved", action_by=current_user.username))
+    log_audit(db, current_user.username, "approve", f"File: {name}")
+
     return {
-        "message":   f"{name} approved!",
-        "status":    "success",
+        "message":     f"{name} approved!",
+        "status":      "success",
         "approved_by": current_user.username,
-        "timestamp": datetime.now().isoformat()
+        "timestamp":   datetime.now().isoformat()
     }
 
 
 @app.post("/api/reject/{filename}")
 def reject_task(
     filename: str,
-    current_user: User = Depends(require_manager_or_above)
+    current_user: User   = Depends(require_manager_or_above),
+    db:          Session = Depends(get_db)
 ):
     """File ko Pending_Approval se Done mein move karo. (Manager+ only)"""
     name = safe_filename(filename)
@@ -219,11 +233,16 @@ def reject_task(
     if not src.exists():
         raise HTTPException(status_code=404, detail=f"{name} nahi mili")
     shutil.move(str(src), dst)
+
+    # DB mein log karo
+    db.add(EmailLogModel(filename=name, status="rejected", action_by=current_user.username))
+    log_audit(db, current_user.username, "reject", f"File: {name}")
+
     return {
-        "message":    f"{name} rejected.",
-        "status":     "rejected",
+        "message":     f"{name} rejected.",
+        "status":      "rejected",
         "rejected_by": current_user.username,
-        "timestamp":  datetime.now().isoformat()
+        "timestamp":   datetime.now().isoformat()
     }
 
 
@@ -235,6 +254,37 @@ def get_logs():
         return {"logs": [], "message": "No logs yet."}
     lines = log_file.read_text(encoding="utf-8").splitlines()
     return {"logs": lines[-50:], "total_lines": len(lines)}
+
+
+@app.get("/api/db/users")
+def get_users(
+    current_user: User   = Depends(require_admin),
+    db:          Session = Depends(get_db)
+):
+    """Saare users dekho. (Admin only)"""
+    from api.database import UserModel
+    users = db.query(UserModel).all()
+    return {"users": [{"username": u.username, "role": u.role, "full_name": u.full_name, "is_active": u.is_active, "created_at": str(u.created_at)} for u in users]}
+
+
+@app.get("/api/db/audit")
+def get_audit(
+    current_user: User   = Depends(require_admin),
+    db:          Session = Depends(get_db)
+):
+    """Audit log dekho. (Admin only)"""
+    logs = db.query(AuditLogModel).order_by(AuditLogModel.created_at.desc()).limit(50).all()
+    return {"audit_logs": [{"user": l.user, "action": l.action, "detail": l.detail, "time": str(l.created_at)} for l in logs]}
+
+
+@app.get("/api/db/email-logs")
+def get_email_logs(
+    current_user: User   = Depends(get_current_user),
+    db:          Session = Depends(get_db)
+):
+    """Email history dekho."""
+    logs = db.query(EmailLogModel).order_by(EmailLogModel.created_at.desc()).limit(50).all()
+    return {"email_logs": [{"filename": l.filename, "status": l.status, "action_by": l.action_by, "time": str(l.created_at)} for l in logs]}
 
 
 @app.get("/api/report")

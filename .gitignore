@@ -3,6 +3,10 @@ credentials.json
 token.json
 token_send.json
 
+# Database files
+*.db
+*.sqlite
+
 # Python
 __pycache__/
 *.pyc
