@@ -1,0 +1,16 @@
+# Credentials — kabhi bhi upload mat karo!
+credentials.json
+token.json
+token_send.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# Logs (optional)
+AI_Employee_Vault/Logs/system.log
+
+# Obsidian
+.obsidian/
