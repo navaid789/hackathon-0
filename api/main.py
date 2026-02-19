@@ -9,12 +9,18 @@ API Docs:
     http://localhost:8000/docs
 """
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import OAuth2PasswordRequestForm
 from pathlib import Path
 import shutil
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
+from api.auth import (
+    authenticate_user, create_token, get_current_user,
+    require_manager_or_above, require_admin,
+    Token, User, TOKEN_EXPIRE_MINUTES
+)
 
 app = FastAPI(
     title="AutoOps AI",
@@ -105,6 +111,32 @@ def root():
     return {"status": "online", "product": "AutoOps AI", "version": "1.0.0"}
 
 
+# ─── Auth Routes ─────────────────────────────────────────
+
+@app.post("/api/auth/login", response_model=Token)
+def login(form_data: OAuth2PasswordRequestForm = Depends()):
+    """Login karo — JWT token milega."""
+    user = authenticate_user(form_data.username, form_data.password)
+    if not user:
+        raise HTTPException(status_code=401, detail="Username ya password galat hai")
+    token = create_token(
+        data={"sub": user["username"]},
+        expires_delta=timedelta(minutes=TOKEN_EXPIRE_MINUTES)
+    )
+    return Token(
+        access_token=token,
+        token_type="bearer",
+        role=user["role"],
+        username=user["username"]
+    )
+
+
+@app.get("/api/auth/me", response_model=User)
+def get_me(current_user: User = Depends(get_current_user)):
+    """Apni profile dekho."""
+    return current_user
+
+
 @app.get("/api/status")
 def get_status():
     """Saare folders ka status."""
@@ -156,27 +188,43 @@ def get_pending():
 
 
 @app.post("/api/approve/{filename}")
-def approve_task(filename: str):
-    """File ko Pending_Approval se Approved mein move karo."""
+def approve_task(
+    filename: str,
+    current_user: User = Depends(require_manager_or_above)
+):
+    """File ko Pending_Approval se Approved mein move karo. (Manager+ only)"""
     name = safe_filename(filename)
     src  = VAULT / "Pending_Approval" / name
     dst  = VAULT / "Approved" / name
     if not src.exists():
         raise HTTPException(status_code=404, detail=f"{name} nahi mili")
     shutil.move(str(src), dst)
-    return {"message": f"{name} approved!", "status": "success", "timestamp": datetime.now().isoformat()}
+    return {
+        "message":   f"{name} approved!",
+        "status":    "success",
+        "approved_by": current_user.username,
+        "timestamp": datetime.now().isoformat()
+    }
 
 
 @app.post("/api/reject/{filename}")
-def reject_task(filename: str):
-    """File ko Pending_Approval se Done mein move karo (rejected)."""
+def reject_task(
+    filename: str,
+    current_user: User = Depends(require_manager_or_above)
+):
+    """File ko Pending_Approval se Done mein move karo. (Manager+ only)"""
     name = safe_filename(filename)
     src  = VAULT / "Pending_Approval" / name
     dst  = VAULT / "Done" / f"REJECTED_{name}"
     if not src.exists():
         raise HTTPException(status_code=404, detail=f"{name} nahi mili")
     shutil.move(str(src), dst)
-    return {"message": f"{name} rejected.", "status": "rejected", "timestamp": datetime.now().isoformat()}
+    return {
+        "message":    f"{name} rejected.",
+        "status":     "rejected",
+        "rejected_by": current_user.username,
+        "timestamp":  datetime.now().isoformat()
+    }
 
 
 @app.get("/api/logs")
