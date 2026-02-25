@@ -14,6 +14,11 @@
       "command": "node",
       "args": ["mcp_servers/gmail_server.js"],
       "description": "AutoOps AI Gmail — check unread emails, send replies (dry-run if no credentials)"
+    },
+    "autoops-odoo": {
+      "command": "node",
+      "args": ["mcp_servers/odoo_server.js"],
+      "description": "AutoOps AI Odoo — accounting, invoices, customers via Odoo 19+ JSON-RPC (dry-run if ODOO_URL not set)"
     }
   }
 }
