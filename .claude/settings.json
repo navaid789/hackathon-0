@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "autoops-vault": {
+      "command": "node",
+      "args": ["mcp_servers/vault_server.js"],
+      "description": "AutoOps AI Vault — read/write/approve/reject vault folder tasks"
+    },
+    "autoops-dashboard": {
+      "command": "node",
+      "args": ["mcp_servers/dashboard_server.js"],
+      "description": "AutoOps AI Dashboard — status reports, logs, dashboard updates"
+    },
+    "autoops-gmail": {
+      "command": "node",
+      "args": ["mcp_servers/gmail_server.js"],
+      "description": "AutoOps AI Gmail — check unread emails, send replies (dry-run if no credentials)"
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "name": "autoops-mcp-servers",
+  "version": "1.0.0",
+  "description": "MCP Servers for AutoOps AI — Vault, Gmail, Dashboard",
+  "type": "module",
+  "scripts": {
+    "vault": "node vault_server.js",
+    "dashboard": "node dashboard_server.js",
+    "gmail": "node gmail_server.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  }
+}
