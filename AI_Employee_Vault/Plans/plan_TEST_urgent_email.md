@@ -1,14 +1,14 @@
-# Plan: No Subject
+# Plan: URGENT: Invoice #1234 overdue payment needed ASAP
 
 **Created:** 2026-02-25 11:33
-**Source:** final_test.md
-**Client:** Unknown Client
+**Source:** TEST_urgent_email.md
+**Client:** test@client.com
 **Priority:** HIGH
 **Action:** Process invoice/payment request
 **Status:** Pending Approval
 
 ## Analysis
-Email from Unknown Client regarding: "No Subject"
+Email from test@client.com regarding: "URGENT: Invoice #1234 overdue payment needed ASAP"
 Priority detected: HIGH
 
 ## Action Steps

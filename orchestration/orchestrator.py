@@ -30,6 +30,16 @@ WATCHERS = [
         "script": "watchers/approval_watcher.py",
         "color": "\033[92m",   # green
     },
+    {
+        "name": "LinkedIn Watcher",
+        "script": "watchers/linkedin_watcher.py --watch",
+        "color": "\033[96m",   # cyan
+    },
+    {
+        "name": "Reasoning Loop",
+        "script": "orchestration/reasoning_loop.py --watch",
+        "color": "\033[95m",   # magenta
+    },
 ]
 
 RESET = "\033[0m"
@@ -50,8 +60,10 @@ def start_watchers():
             log(f"[SKIP] {w['name']} — script nahi mili: {script}")
             continue
 
+        # Support args in script string (e.g. "script.py --watch")
+        script_parts = str(w["script"]).split()
         proc = subprocess.Popen(
-            [sys.executable, str(script)],
+            [sys.executable] + script_parts,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,

@@ -1,14 +1,14 @@
-# Plan: No Subject
+# Plan: URGENT — Invoice #INV-2024-001 Due Tomorrow
 
 **Created:** 2026-02-25 11:33
-**Source:** final_test.md
-**Client:** Unknown Client
+**Source:** TEST_URGENT_001.md
+**Client:** client@acme.com
 **Priority:** HIGH
 **Action:** Process invoice/payment request
 **Status:** Pending Approval
 
 ## Analysis
-Email from Unknown Client regarding: "No Subject"
+Email from client@acme.com regarding: "URGENT — Invoice #INV-2024-001 Due Tomorrow"
 Priority detected: HIGH
 
 ## Action Steps
