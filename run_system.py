@@ -10,11 +10,11 @@ import sys
 from datetime import datetime
 
 scripts = [
-    "filesystem_watcher.py",
-    "watchers/gmail_watcher.py",
-    "watchers/approval_watcher.py",
-    "orchestration/scheduler.py",
-    "dashboard_ui.py",
+    "watchers/filesystem_watcher.py",   # Inbox → Needs_Action
+    "watchers/gmail_watcher.py",         # Gmail API monitor
+    "watchers/approval_watcher.py",      # Send approved emails
+    "orchestration/scheduler.py",        # Daily reports (9am/6pm)
+    "dashboard_ui.py",                   # Flask dashboard :5000
 ]
 
 processes = []

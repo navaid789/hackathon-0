@@ -7,3 +7,4 @@ SIM_MCP_1772000595828.md
 TEST_URGENT_001.md
 TEST_urgent_email.md
 urgent_invoice.md
+task1.md

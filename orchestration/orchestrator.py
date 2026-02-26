@@ -17,7 +17,7 @@ from datetime import datetime
 WATCHERS = [
     {
         "name": "Filesystem Watcher",
-        "script": "filesystem_watcher.py",
+        "script": "watchers/filesystem_watcher.py",
         "color": "\033[94m",   # blue
     },
     {
